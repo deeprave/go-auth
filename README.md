@@ -1,4 +1,4 @@
-# Simple database authentivation API
+# Simple authentication API with database backend
 
 ## Description
 
