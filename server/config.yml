@@ -1,0 +1,21 @@
+version: "1.0"
+env: dev
+host: localhost
+port: 3000
+cors:
+    - http://localhost:9000
+    - https://localhost:9000
+    - http://localhost:3000
+    - https://localhost:3000
+    - http://localhost
+auth:
+    iss: acme.co
+    aud: acme.co
+    secret: BpLnfgDsc2WD8F2qNfHK5a84jjJkwzDk
+    exp: 24h0m0s
+    rxp: 30m0s
+    cookie:
+        prefix: Local
+        domain: localhost
+        path: /
+        name: refresh_token
