@@ -11,6 +11,7 @@ type User struct {
 	Email           string    `json:"email"`
 	Given           string    `json:"given"`
 	Surname         string    `json:"surname"`
+	Phone           string    `json:"phone"`
 	IsActive        bool      `json:"is_active"`
 	IsAdmin         bool      `json:"is_admin"`
 	IsLogindisabled bool      `json:"is_logindisabled"`
