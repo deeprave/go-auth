@@ -7,6 +7,7 @@ import (
 type DB interface {
 	Close()
 
+	GetDatabaseInfo() (*models.Database, error)
 	GetUsers(activeOnly bool, window ...*Window) ([]*models.User, error)
 
 	GetUserById(id int64) (*models.User, error)

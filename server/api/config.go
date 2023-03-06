@@ -13,13 +13,19 @@ type Env string
 //goland:noinspection GoUnusedConst
 const Production, Staging, NonProd, Development string = "prod", "stg", "np", "dev"
 
+type Db struct {
+	Url   string `json:"url,omitempty"`
+	SAUrl string `json:"sa_url,omitempty"`
+}
+
 type Config struct {
-	Version string   `yaml:"version"`
-	Env     string   `yaml:"env"`
-	Host    string   `yaml:"host"`
-	Port    int      `yaml:"port"`
-	Cors    []string `yaml:"cors"`
-	Auth    Auth     `yaml:"auth"`
+	Version  string   `yaml:"version"`
+	Env      string   `yaml:"env"`
+	Host     string   `yaml:"host"`
+	Port     int      `yaml:"port"`
+	Cors     []string `yaml:"cors"`
+	Auth     Auth     `yaml:"auth"`
+	Database Db       `yaml:"database"`
 }
 
 func NewConfig(version string) *Config {
@@ -42,6 +48,10 @@ func NewConfig(version string) *Config {
 				Name: "__Host-refresh_token",
 			},
 		},
+		Database: Db{
+			Url:   "postgresql://authuser@localhost/auth",
+			SAUrl: "postgresql://postgres@localhost/postgres",
+		},
 	}
 }
 
@@ -63,7 +73,11 @@ func (cfg *Config) Read(filename string, version string, v ...any) error {
 	if err == nil {
 		var data []byte
 		if data, err = os.ReadFile(filepath); err == nil {
-			err = yaml.Unmarshal(data, cfg)
+			content := string(data)
+			for strings.Contains(content, "${") {
+				content = os.ExpandEnv(string(data))
+			}
+			err = yaml.Unmarshal([]byte(content), cfg)
 		}
 		if err == nil && !cfg.VersionOk(version) {
 			err = fmt.Errorf("config version '%s' is not compatible", version)

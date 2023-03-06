@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/chigopher/pathlib"
 	"github.com/deeprave/go-auth/api"
-	"github.com/deeprave/go-auth/repository/db"
+	"github.com/deeprave/go-auth/repository/postgresql"
 	"github.com/joho/godotenv"
 	"log"
 	"os"
@@ -16,22 +16,21 @@ const (
 	configName = "config.yml"
 )
 
-func setOptions(cfg *api.Config) (bool, bool, string) {
+func setOptions(cfg *api.Config) (bool, bool, string, string) {
 	if err := godotenv.Load(); err != nil {
 		log.Print("WARNING: failed to load .env file")
 	}
 
-	// dns (db connection string) may contain secrets so is not appropriate for a config file
-	// instead this is persisted via the environment or .env which is never committed to SCM
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		dsn = "postgres://localhost:5432/auth"
-	}
+	var (
+		dsn    string
+		sa_dsn string
+	)
 
 	flag.IntVar(&cfg.Port, "port", 4000, "listen port")
 	flag.StringVar(&cfg.Host, "host", "localhost", "listen host")
 	flag.StringVar(&cfg.Env, "env", api.Development, "application environment")
-	flag.StringVar(&dsn, "dsn", dsn, "database connection string")
+	flag.StringVar(&dsn, "dsn", os.Getenv("DATABASE_URL"), "database connection string (standard)")
+	flag.StringVar(&sa_dsn, "sadsn", os.Getenv("POSTGRES_URL"), "database connection string (privileged)")
 	flag.StringVar(&cfg.Auth.Secret, "jwt-secret", cfg.Auth.Secret, "jwt secret (default overridden by config)")
 	flag.StringVar(&cfg.Auth.Issuer, "jwt-iss", cfg.Auth.Issuer, "jwt issuer")
 	flag.StringVar(&cfg.Auth.Audience, "jwt-aud", cfg.Auth.Audience, "jwt audience")
@@ -42,7 +41,7 @@ func setOptions(cfg *api.Config) (bool, bool, string) {
 
 	flag.Parse()
 
-	return *showVersion, *writeConfig, dsn
+	return *showVersion, *writeConfig, dsn, sa_dsn
 }
 
 func main() {
@@ -50,7 +49,18 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	showVersion, writeConfig, dsn := setOptions(cfg)
+	showVersion, writeConfig, dsn, sa_dsn := setOptions(cfg)
+
+	if dsn != "" {
+		cfg.Database.Url = dsn
+	} else if cfg.Database.Url == "" {
+		cfg.Database.Url = os.Getenv("DATABASE_URL")
+	}
+	if sa_dsn != "" {
+		cfg.Database.SAUrl = sa_dsn
+	} else if cfg.Database.SAUrl == "" {
+		cfg.Database.SAUrl = os.Getenv("POSTGRES_URL")
+	}
 
 	if showVersion {
 		exe := pathlib.NewPath(os.Args[0])
@@ -70,9 +80,9 @@ func main() {
 
 	app := api.NewApp(cfg, "main ", "server", version)
 
-	app.DB, err = db.NewPG(dsn)
+	app.DB, err = postgresql.NewPG(cfg.Database.Url)
 	if err != nil {
-		log.Fatal("failed to open db:", err)
+		log.Fatal("failed to open postgresql:", err)
 	}
 	defer app.DB.Close()
 	log.Print(app.StartServer())

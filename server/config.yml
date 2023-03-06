@@ -19,3 +19,6 @@ auth:
         domain: localhost
         path: /
         name: refresh_token
+database:
+    url: ${DATABASE_URL}
+    sa_url: ${POSTGRES_URL}

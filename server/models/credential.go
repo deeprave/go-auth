@@ -3,7 +3,7 @@ package models
 import (
 	"errors"
 	"fmt"
-	"github.com/deeprave/go-auth/repository"
+	"github.com/deeprave/go-auth/lib"
 	"github.com/pquerna/otp"
 	"github.com/pquerna/otp/totp"
 	"golang.org/x/crypto/bcrypt"
@@ -27,12 +27,12 @@ type Credential struct {
 	Data   map[CredType]string `json:"data"`
 }
 
-func (c *Credential) ScanFields() repository.Ptrs {
-	return repository.NewPtrs(&c.UserId, &c.Type, &c.Data)
+func (c *Credential) ScanFields() lib.Ptrs {
+	return lib.NewPtrs(&c.UserId, &c.Type, &c.Data)
 }
 
 var (
-	CredentialTable = repository.NewTable(
+	CredentialTable = lib.NewTable(
 		"credential",
 		"c",
 		[]string{
